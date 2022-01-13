@@ -2,6 +2,7 @@ package com.example.mypdfapp
 
 import android.content.ContentValues
 import android.content.Context
+
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -9,10 +10,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.itextpdf.kernel.pdf.PdfDocument
-import com.itextpdf.kernel.pdf.PdfReader
-import com.itextpdf.kernel.pdf.PdfWriter
-import com.itextpdf.kernel.pdf.ReaderProperties
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
@@ -29,18 +27,9 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
 
             try {
-
                 val resultStream = mainRepository.makeRequest(pdfUrl)
                 val out = ByteArrayOutputStream()
                 val charset = Charsets.UTF_8
-
-                val document =  PdfDocument(
-                    PdfReader(
-                        resultStream,
-                        ReaderProperties().setPassword(pdfPassword.toByteArray(charset))),
-                        PdfWriter(out))
-
-                document.close()
 
                 //val textFromPage = PdfTextExtractor.getTextFromPage(document.firstPage)
                 //Log.d("extracto", textFromPage)

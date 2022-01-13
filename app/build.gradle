@@ -31,11 +31,6 @@ android {
         jvmTarget = '1.8'
     }
 
-    packagingOptions {
-        exclude 'com/itextpdf/io/font/cmap_info.txt'
-        exclude 'com/itextpdf/io/font/cmap/*'
-    }
-
 }
 
 dependencies {
@@ -50,7 +45,6 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 
     //PDF Library
-    implementation 'com.itextpdf:itext7-core:7.0.2'
 
     //corrutinas
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9'
