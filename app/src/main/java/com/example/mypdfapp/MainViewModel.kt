@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,6 +31,7 @@ class MainViewModel : ViewModel() {
     val pdfPage : LiveData<Bitmap> = _pdfPage
 
     private lateinit var context: Context
+
 
     fun requestPDF(mainRepository: MainRepository, pdfUrl : String, pdfPassword : String, context: Context){
         _isLoading.value = true
@@ -53,6 +55,7 @@ class MainViewModel : ViewModel() {
                 val coordinates = arrayListOf(Coordinates(10.0f, 7.0f),
                     Coordinates(27.0f, 5.75f))
                 val textList = arrayListOf(fullClientName, currentDate)
+                //val desiredScale = getDocumentDetails(resultStream!!)
                 writeInPdfDocument(uri!!, 7,coordinates, textList)
 
                 _isLoading.postValue(false)
@@ -90,15 +93,13 @@ class MainViewModel : ViewModel() {
 
         for (i in 0 until renderer.pageCount) {
             val page: PdfRenderer.Page = renderer.openPage(i)
-            val mBitmap = Bitmap.createBitmap(700, 900, Bitmap.Config.ARGB_8888)
+            val mBitmap = Bitmap.createBitmap(612, 792, Bitmap.Config.ARGB_8888)
             page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             if (i == selectedPage) {
                 val canvas = Canvas(mBitmap)
                 paint.color = Color.rgb(0, 0, 0)
                 // text size in pixels
                 paint.textSize = (5 * scale)
-                // text shadows
-                paint.setShadowLayer(1f, 0f, 1f, Color.TRANSPARENT)
                 val bounds = Rect()
 
                 for (j in mInfo.indices) {
@@ -112,10 +113,10 @@ class MainViewModel : ViewModel() {
                 _pdfPage.postValue(mBitmap)
             }
             //Create new document with the added changes
-            val newPageInfo = PdfDocument.PageInfo.Builder(page.width, page.height, i + 1).create()
+            val newPageInfo = PdfDocument.PageInfo.Builder(mBitmap.width, mBitmap.height, i + 1).create()
             val newPage = newDocument.startPage(newPageInfo)
             val newCanvas = newPage.canvas
-            newCanvas.drawBitmap(mBitmap, Matrix(), paint)
+            newCanvas.drawBitmap(mBitmap, Matrix(), Paint())
             newDocument.finishPage(newPage)
             page.close()
         }
@@ -126,6 +127,25 @@ class MainViewModel : ViewModel() {
         }
         // close the renderer
         renderer.close()
+    }
+
+    private fun getDocumentDetails(stream : InputStream) : Float {
+        val options = BitmapFactory.Options()
+        val desiredWidth = 600
+        val desiredHeight = 800
+
+        //options.inJustDecodeBounds = true;
+        val mBitmap = BitmapFactory.decodeStream(stream)
+        var srcWidth = options.outWidth
+        var srcHeight = options.outHeight
+
+        var inSampleSize = 1
+        while (srcWidth / 2 > desiredWidth) {
+            srcWidth /= 2
+            srcHeight /= 2
+            inSampleSize *= 2
+        }
+        return desiredWidth.toFloat() / srcWidth
     }
 
 

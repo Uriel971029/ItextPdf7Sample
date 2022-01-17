@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         val mainRepository = MainRepository()
         val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
-        viewModel.requestPDF(mainRepository, "http://192.168.0.7:8888/contrato_sample.pdf",
+        viewModel.requestPDF(mainRepository, "http://192.168.0.4:8888/contrato_sample.pdf",
             "libe291209", this@MainActivity)
 
         viewModel.isLoading.observe(this, {
