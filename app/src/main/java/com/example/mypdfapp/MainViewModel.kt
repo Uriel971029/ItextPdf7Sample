@@ -1,4 +1,4 @@
-package com.example.mypdfapp
+    package com.example.mypdfapp
 
 import android.R.attr.bitmap
 import android.content.ContentUris
@@ -105,7 +105,7 @@ class MainViewModel : ViewModel() {
             val options = BitmapFactory.Options()
             options.inSampleSize
             val mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+            page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             if (i == selectedPage) {
                 val canvas = Canvas(mBitmap)
                 paint.color = Color.rgb(0, 0, 0)
@@ -132,12 +132,14 @@ class MainViewModel : ViewModel() {
             page.close()
         }
 
+        // close the renderer
+        renderer.close()
+
         val newUri = savePdfDocument("newContract.pdf", pdfMimeTye)
         context.contentResolver.openOutputStream(newUri!!).use {
             newDocument.writeTo(it)
         }
-        // close the renderer
-        renderer.close()
+
     }
 
     //Cambiando a jPEG pasamos de 27.8mb a 6mb pero tenemos hojas con fondo negro por ser jpg, se sacrifica mas performance
