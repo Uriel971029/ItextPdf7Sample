@@ -1,14 +1,17 @@
 package com.example.mypdfapp
 
+import android.graphics.BitmapFactory
 import android.media.Image
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.lang.Exception
 import java.net.HttpURLConnection
 
 class MainActivity : AppCompatActivity() {

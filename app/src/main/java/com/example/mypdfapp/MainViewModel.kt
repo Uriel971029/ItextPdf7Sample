@@ -1,5 +1,6 @@
 package com.example.mypdfapp
 
+import android.R.attr.bitmap
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
@@ -31,6 +32,10 @@ class MainViewModel : ViewModel() {
     val pdfPage : LiveData<Bitmap> = _pdfPage
 
     private lateinit var context: Context
+    private val jpgMimeTye = "image/jpeg"
+    private val pngMimeTye = "image/png"
+    private val pdfMimeTye = "application/pdf"
+
 
 
     fun requestPDF(mainRepository: MainRepository, pdfUrl : String, pdfPassword : String, context: Context){
@@ -39,23 +44,22 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
 
             try {
-                val resultStream = mainRepository.makeRequest(pdfUrl)
                 val filename = "contract.pdf"
+                val assetManager = context.assets
+                val resultStream = assetManager.open(filename)
                 val fullClientName = "Marcos Uriel Trejo Velázquez"
                 val formatter = SimpleDateFormat.getDateInstance()
                 val currentDate = formatter.format(Date())
 
-                val uri = savePdfDocument(filename)
+                val uri = savePdfDocument(filename, pdfMimeTye)
                 if (uri != null) {
                     context.contentResolver.openOutputStream(uri).use { output ->
                         resultStream?.copyTo(output!!, DEFAULT_BUFFER_SIZE)
                     }
                 }
                 //Edit pdf document and insert client data as well as current date
-                val coordinates = arrayListOf(Coordinates(10.0f, 7.0f),
-                    Coordinates(27.0f, 5.75f))
+                val coordinates = arrayListOf(Coordinates(10.0f, 7.0f), Coordinates(27.0f, 5.7f))
                 val textList = arrayListOf(fullClientName, currentDate)
-                //val desiredScale = getDocumentDetails(resultStream!!)
                 writeInPdfDocument(uri!!, 7,coordinates, textList)
 
                 _isLoading.postValue(false)
@@ -68,11 +72,11 @@ class MainViewModel : ViewModel() {
     }
 
 
-    private fun savePdfDocument(filename: String): Uri? {
+    private fun savePdfDocument(filename: String, mimeTye : String): Uri? {
         //save file
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-            put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeTye)
             put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
         val resolver = context.contentResolver
@@ -93,13 +97,20 @@ class MainViewModel : ViewModel() {
 
         for (i in 0 until renderer.pageCount) {
             val page: PdfRenderer.Page = renderer.openPage(i)
-            val mBitmap = Bitmap.createBitmap(612, 792, Bitmap.Config.ARGB_8888)
-            page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            val width: Int =
+                context.resources.displayMetrics.densityDpi / 72 * page.width
+            val height: Int =
+                context.resources.displayMetrics.densityDpi / 72 * page.height
+
+            val options = BitmapFactory.Options()
+            options.inSampleSize
+            val mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
             if (i == selectedPage) {
                 val canvas = Canvas(mBitmap)
                 paint.color = Color.rgb(0, 0, 0)
                 // text size in pixels
-                paint.textSize = (5 * scale)
+                paint.textSize = (18 * scale)
                 val bounds = Rect()
 
                 for (j in mInfo.indices) {
@@ -108,10 +119,10 @@ class MainViewModel : ViewModel() {
                     val y = (mBitmap.height + bounds.height()) / coordinates[j].yPosition
                     canvas.drawText(mInfo[j], x * scale, y * scale, paint)
                 }
-
                 //pass pdf page to the view
                 _pdfPage.postValue(mBitmap)
             }
+
             //Create new document with the added changes
             val newPageInfo = PdfDocument.PageInfo.Builder(mBitmap.width, mBitmap.height, i + 1).create()
             val newPage = newDocument.startPage(newPageInfo)
@@ -121,12 +132,25 @@ class MainViewModel : ViewModel() {
             page.close()
         }
 
-        val newUri = savePdfDocument("newContract.pdf")
+        val newUri = savePdfDocument("newContract.pdf", pdfMimeTye)
         context.contentResolver.openOutputStream(newUri!!).use {
             newDocument.writeTo(it)
         }
         // close the renderer
         renderer.close()
+    }
+
+    //Cambiando a jPEG pasamos de 27.8mb a 6mb pero tenemos hojas con fondo negro por ser jpg, se sacrifica mas performance
+    //ya que necesitariamos asignar el bitmap a una vista con fondo blanco y pasar esa view a bitmap para agregarlo al doc.
+    private fun savePdfImageToPng(mBitmap: Bitmap, pageNumber : Int) : Bitmap?{
+        //guardamos la pagina compresa
+        val pageUri = savePdfDocument("page${pageNumber}.png", pngMimeTye)
+        context.contentResolver.openOutputStream(pageUri!!).use {
+            mBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+
+        val compressStream = context.contentResolver.openInputStream(pageUri)
+        return BitmapFactory.decodeStream(compressStream)
     }
 
     private fun getDocumentDetails(stream : InputStream) : Float {
