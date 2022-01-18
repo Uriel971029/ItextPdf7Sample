@@ -21,8 +21,7 @@ class MainActivity : AppCompatActivity() {
         val mainRepository = MainRepository()
         val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
-        viewModel.requestPDF(mainRepository, "http://192.168.0.7:8888/contrato_sample.pdf",
-            "libe291209", this@MainActivity)
+        viewModel.requestPDF(mainRepository, "http://192.168.0.2:8888/contrato_sample.pdf", null, this@MainActivity)
 
         viewModel.isLoading.observe(this, {
             if(it){
@@ -30,10 +29,6 @@ class MainActivity : AppCompatActivity() {
             }else{
                 loader.visibility = View.GONE
             }
-        })
-
-        viewModel.pdfPage.observe(this, {
-            pdfViewer.setImageBitmap(it)
         })
     }
 }
